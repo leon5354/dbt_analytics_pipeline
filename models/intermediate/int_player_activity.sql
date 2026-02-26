@@ -1,5 +1,4 @@
--- Intermediate model: Player activity aggregation
--- Aggregates session data to player level
+-- Aggregate sessions to player level
 
 with sessions as (
     select * from {{ ref('stg_sessions') }}
@@ -11,27 +10,23 @@ players as (
 
 player_activity as (
     select
-        s.player_id,
+        player_id,
+        count(distinct session_id) as total_sessions,
+        sum(duration_minutes) as total_playtime_minutes,
+        avg(duration_minutes) as avg_session_duration,
+        max(duration_minutes) as max_session_duration,
+        sum(event_count) as total_events,
+        min(session_date) as first_session,
+        max(session_date) as last_session,
+        count(distinct session_date) as active_days,
         
-        -- Session metrics
-        count(distinct s.session_id) as total_sessions,
-        sum(s.duration_minutes) as total_playtime_minutes,
-        avg(s.duration_minutes) as avg_session_duration,
-        max(s.duration_minutes) as max_session_duration,
-        sum(s.event_count) as total_events,
+        -- made up engagement score
+        (count(distinct session_id) * 0.3 + 
+         avg(duration_minutes) * 0.4 + 
+         count(distinct session_date) * 0.3) as engagement_score
         
-        -- Date metrics
-        min(s.session_date) as first_session_date,
-        max(s.session_date) as last_session_date,
-        count(distinct s.session_date) as active_days,
-        
-        -- Engagement score (custom metric)
-        (count(distinct s.session_id) * 0.3 + 
-         avg(s.duration_minutes) * 0.4 + 
-         count(distinct s.session_date) * 0.3) as engagement_score
-        
-    from sessions s
-    group by s.player_id
+    from sessions
+    group by player_id
 ),
 
 final as (
@@ -48,19 +43,17 @@ final as (
         coalesce(pa.avg_session_duration, 0) as avg_session_duration,
         coalesce(pa.max_session_duration, 0) as max_session_duration,
         coalesce(pa.total_events, 0) as total_events,
-        coalesce(pa.first_session_date, p.signup_date) as first_session_date,
-        coalesce(pa.last_session_date, p.signup_date) as last_session_date,
+        coalesce(pa.first_session, p.signup_date) as first_session,
+        coalesce(pa.last_session, p.signup_date) as last_session,
         coalesce(pa.active_days, 0) as active_days,
         coalesce(pa.engagement_score, 0) as engagement_score,
         
-        -- Days since last activity
-        cast(current_date - coalesce(pa.last_session_date, p.signup_date) as integer) as days_since_last_activity,
+        cast(current_date - coalesce(pa.last_session, p.signup_date) as integer) as days_since_last_active,
         
-        -- Is churned (no activity in 30 days)
+        -- churned if no activity in 30 days
         case 
-            when cast(current_date - coalesce(pa.last_session_date, p.signup_date) as integer) > {{ var('churn_days') }}
-            then true 
-            else false 
+            when cast(current_date - coalesce(pa.last_session, p.signup_date) as integer) > 30
+            then true else false 
         end as is_churned
         
     from players p

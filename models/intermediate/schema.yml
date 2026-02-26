@@ -2,35 +2,18 @@ version: 2
 
 models:
   - name: int_player_activity
-    description: "Intermediate model aggregating session data to player level with engagement metrics."
+    description: "Sessions aggregated to player level"
     columns:
       - name: player_id
-        description: "Unique player identifier"
-        tests:
-          - unique
-          - not_null
+        tests: [unique, not_null]
       - name: total_sessions
-        description: "Total number of sessions played"
-      - name: total_playtime_minutes
-        description: "Total playtime across all sessions"
       - name: engagement_score
-        description: "Composite engagement score based on sessions, duration, and active days"
       - name: is_churned
-        description: "Flag indicating if player has been inactive for more than 30 days"
 
   - name: int_player_revenue
-    description: "Intermediate model aggregating transaction data to player level."
+    description: "Revenue aggregated to player level"
     columns:
       - name: player_id
-        description: "Unique player identifier"
-        tests:
-          - unique
-          - not_null
+        tests: [unique, not_null]
       - name: total_revenue
-        description: "Total revenue from this player"
-      - name: total_transactions
-        description: "Number of transactions"
-      - name: first_purchase_date
-        description: "Date of first purchase"
-      - name: last_purchase_date
-        description: "Date of most recent purchase"
+      - name: first_purchase

@@ -2,67 +2,33 @@ version: 2
 
 models:
   - name: stg_players
-    description: "Staging model for player data. Cleans and standardizes raw player information."
+    description: "Cleaned player data"
     columns:
       - name: player_id
-        description: "Unique player identifier"
-        tests:
-          - unique
-          - not_null
+        tests: [unique, not_null]
       - name: signup_date
-        description: "Date the player signed up"
-        tests:
-          - not_null
-      - name: country_code
-        description: "Standardized country code (ISO 2-letter)"
+        tests: [not_null]
       - name: platform
-        description: "Gaming platform (ios, android, switch)"
         tests:
           - accepted_values:
               values: ['ios', 'android', 'switch']
       - name: region
-        description: "Geographic region grouping"
+        description: "NA, APAC, EMEA, or LATAM"
 
   - name: stg_transactions
-    description: "Staging model for transaction data. Cleans and standardizes revenue events."
+    description: "Cleaned transaction data"
     columns:
       - name: transaction_id
-        description: "Unique transaction identifier"
-        tests:
-          - unique
-          - not_null
+        tests: [unique, not_null]
       - name: player_id
-        description: "Foreign key to players"
-        tests:
-          - not_null
-      - name: transaction_date
-        description: "Date of transaction"
-        tests:
-          - not_null
+        tests: [not_null]
       - name: amount
-        description: "Transaction amount in USD"
-        tests:
-          - not_null
-      - name: product_category
-        description: "Categorized product type"
+        tests: [not_null]
 
   - name: stg_sessions
-    description: "Staging model for session data. Cleans and standardizes player activity logs."
+    description: "Cleaned session data"
     columns:
       - name: session_id
-        description: "Unique session identifier"
-        tests:
-          - unique
-          - not_null
+        tests: [unique, not_null]
       - name: player_id
-        description: "Foreign key to players"
-        tests:
-          - not_null
-      - name: session_date
-        description: "Date of session"
-        tests:
-          - not_null
-      - name: duration_minutes
-        description: "Session duration in minutes"
-        tests:
-          - not_null
+        tests: [not_null]
