@@ -1,0 +1,33 @@
+name: 'game_analytics'
+version: '1.0.0'
+config-version: 2
+
+profile: 'game_analytics'
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+vars:
+  # Date boundaries for analysis
+  start_date: '2025-01-01'
+  end_date: '2025-12-31'
+  
+  # Business thresholds
+  whale_threshold: 50
+  dolphin_threshold: 10
+  churn_days: 30
+
+on-run-start:
+  - "{{ log('Starting dbt run for Game Analytics Pipeline', info=true) }}"
+
+on-run-end:
+  - "{{ log('dbt run completed successfully', info=true) }}"

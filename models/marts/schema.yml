@@ -1,0 +1,64 @@
+version: 2
+
+models:
+  - name: mart_player_360
+    description: |
+      Complete 360-degree view of each player combining activity and revenue data.
+      This is the primary mart table for player analytics.
+    columns:
+      - name: player_id
+        description: "Unique player identifier"
+        tests:
+          - unique
+          - not_null
+      - name: player_segment
+        description: "Business-defined player segment (Whale, Dolphin, Active Free, Casual)"
+        tests:
+          - accepted_values:
+              values: ['Whale', 'Dolphin', 'Active Free', 'Casual']
+      - name: lifecycle_stage
+        description: "Player lifecycle stage for marketing targeting"
+      - name: is_payer
+        description: "Has this player ever made a purchase?"
+      - name: total_revenue
+        description: "Lifetime revenue from this player"
+      - name: total_sessions
+        description: "Total sessions played"
+      - name: days_since_last_activity
+        description: "Days since last login/activity"
+
+  - name: mart_daily_metrics
+    description: "Daily aggregated KPIs for business reporting and dashboards."
+    columns:
+      - name: metric_date
+        description: "Date of the metrics"
+        tests:
+          - not_null
+      - name: new_players
+        description: "Number of new player signups"
+      - name: active_players
+        description: "Number of active players"
+      - name: daily_revenue
+        description: "Total revenue for the day"
+      - name: arpu
+        description: "Average Revenue Per User"
+      - name: payer_rate
+        description: "Percentage of players who have paid"
+
+  - name: mart_regional_performance
+    description: "Regional breakdown of player metrics and revenue."
+    columns:
+      - name: region
+        description: "Geographic region"
+        tests:
+          - not_null
+      - name: country_code
+        description: "Country code"
+        tests:
+          - not_null
+      - name: total_revenue
+        description: "Total revenue from this region"
+      - name: conversion_rate
+        description: "Payer conversion rate"
+      - name: retention_rate_7d
+        description: "7-day retention rate"
