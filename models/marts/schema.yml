@@ -7,20 +7,28 @@ models:
       - name: player_id
         tests: [unique, not_null]
       - name: player_segment
+        description: "Revenue tier: Whale >= whale_threshold, Dolphin >= dolphin_threshold"
         tests:
           - accepted_values:
-              values: ['Whale', 'Dolphin', 'Active Free', 'Casual']
+              arguments:
+                values: ['Whale', 'Dolphin', 'Active Free', 'Casual']
       - name: lifecycle_stage
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['Churned', 'Potential Converter', 'At Risk', 'Active Payer', 'New Player']
       - name: is_payer
       - name: total_revenue
 
   - name: mart_daily_metrics
-    description: "Daily KPIs for dashboards"
+    description: "Daily KPIs built from event-level sessions and transactions"
     columns:
       - name: date
-        tests: [not_null]
-      - name: arpu
-      - name: payer_rate
+        tests: [unique, not_null]
+      - name: active_players
+        description: "Distinct players with a session that day (DAU)"
+      - name: arpdau
+        description: "Revenue per daily active user; null on days with no sessions"
 
   - name: mart_regional_performance
     description: "Metrics by region and country"

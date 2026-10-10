@@ -11,7 +11,8 @@ models:
       - name: platform
         tests:
           - accepted_values:
-              values: ['ios', 'android', 'switch']
+              arguments:
+                values: ['ios', 'android', 'switch']
       - name: region
         description: "NA, APAC, EMEA, or LATAM"
 
@@ -21,7 +22,12 @@ models:
       - name: transaction_id
         tests: [unique, not_null]
       - name: player_id
-        tests: [not_null]
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_players')
+                field: player_id
       - name: amount
         tests: [not_null]
 
@@ -31,4 +37,9 @@ models:
       - name: session_id
         tests: [unique, not_null]
       - name: player_id
-        tests: [not_null]
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_players')
+                field: player_id

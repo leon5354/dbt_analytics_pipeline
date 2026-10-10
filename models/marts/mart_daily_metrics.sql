@@ -1,30 +1,45 @@
--- Daily KPIs for dashboards
+-- Daily KPIs for dashboards, built from event-level data so each day
+-- counts what actually happened that day (DAU, revenue, payers).
 
 with players as (
-    select * from {{ ref('mart_player_360') }}
+    select * from {{ ref('stg_players') }}
+),
+
+sessions as (
+    select * from {{ ref('stg_sessions') }}
+),
+
+transactions as (
+    select * from {{ ref('stg_transactions') }}
 ),
 
 signups as (
     select signup_date as date, count(*) as new_players
-    from players group by signup_date
+    from players
+    group by 1
 ),
 
 active as (
-    select last_session as date, count(*) as active_players
-    from players where not is_churned group by last_session
+    select session_date as date, count(distinct player_id) as active_players
+    from sessions
+    group by 1
 ),
 
 revenue as (
-    select last_purchase as date, sum(total_revenue) as revenue, count(*) as payers
-    from players where is_payer group by last_purchase
+    select
+        transaction_date as date,
+        sum(amount) as revenue,
+        count(distinct player_id) as payers
+    from transactions
+    group by 1
 ),
 
 dates as (
-    select distinct signup_date as date from players
+    select date from signups
     union
-    select distinct last_session from players where last_session is not null
+    select date from active
     union
-    select distinct last_purchase from players where last_purchase is not null
+    select date from revenue
 )
 
 select
@@ -33,13 +48,10 @@ select
     coalesce(a.active_players, 0) as active_players,
     coalesce(r.revenue, 0) as revenue,
     coalesce(r.payers, 0) as payers,
-    case when coalesce(a.active_players, 0) > 0 
-         then coalesce(r.revenue, 0) / a.active_players else 0 end as arpu,
-    case when coalesce(a.active_players, 0) > 0 
-         then coalesce(r.payers, 0)::float / a.active_players * 100 else 0 end as payer_rate
+    -- per active user; null when nobody played that day (not a fake 0)
+    r.revenue / nullif(a.active_players, 0) as arpdau
 from dates d
 left join signups s on d.date = s.date
 left join active a on d.date = a.date
 left join revenue r on d.date = r.date
-where d.date is not null
 order by d.date

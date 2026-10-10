@@ -20,8 +20,8 @@ player_activity as (
         max(session_date) as last_session,
         count(distinct session_date) as active_days,
         
-        -- made up engagement score
-        (count(distinct session_id) * 0.3 + 
+        -- weighted engagement score: frequency 30%, depth 40%, consistency 30%
+        (count(distinct session_id) * 0.3 +
          avg(duration_minutes) * 0.4 + 
          count(distinct session_date) * 0.3) as engagement_score
         
@@ -48,13 +48,14 @@ final as (
         coalesce(pa.active_days, 0) as active_days,
         coalesce(pa.engagement_score, 0) as engagement_score,
         
-        cast(current_date - coalesce(pa.last_session, p.signup_date) as integer) as days_since_last_active,
-        
-        -- churned if no activity in 30 days
-        case 
-            when cast(current_date - coalesce(pa.last_session, p.signup_date) as integer) > 30
-            then true else false 
-        end as is_churned
+        -- measured against the snapshot date, not current_date, so results
+        -- are reproducible (the sample data stops in March 2025)
+        cast(date '{{ var("as_of_date") }}' - coalesce(pa.last_session, p.signup_date) as integer)
+            as days_since_last_active,
+
+        -- churned if no activity within churn_days
+        cast(date '{{ var("as_of_date") }}' - coalesce(pa.last_session, p.signup_date) as integer)
+            > {{ var("churn_days") }} as is_churned
         
     from players p
     left join player_activity pa on p.player_id = pa.player_id

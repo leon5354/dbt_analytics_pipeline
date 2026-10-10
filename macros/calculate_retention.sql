@@ -7,8 +7,8 @@ with base as (
     select 
         player_id,
         signup_date,
-        last_session_date,
-        cast(last_session_date - signup_date as integer) as days_active
+        last_session,
+        cast(last_session - signup_date as integer) as days_active
     from {{ ref(model_name) }}
 ),
 

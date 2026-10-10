@@ -15,13 +15,13 @@ cleaned as (
         upper(trim(currency)) as currency,
         
         -- useful date parts
-        extract(year from transaction_date) as year,
-        extract(month from transaction_date) as month,
-        extract(day of week from transaction_date) as day_of_week,
-        
+        extract(year from cast(transaction_date as date)) as year,
+        extract(month from cast(transaction_date as date)) as month,
+        dayofweek(cast(transaction_date as date)) as day_of_week,  -- 0 = Sunday
+
         -- categorize products
-        case 
-            when product_name like 'PokeCoins%' then 'Virtual Currency'
+        case
+            when product_name like 'Gems%' then 'Virtual Currency'
             when product_name = 'Battle_Pass' then 'Battle Pass'
             when product_name = 'Event_Ticket' then 'Event Ticket'
             else 'Other'

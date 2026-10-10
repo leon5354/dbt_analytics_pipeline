@@ -1,49 +1,59 @@
 # dbt Analytics Pipeline
 
-A dbt project showing how I'd structure a data pipeline - raw data to clean analytics tables.
-
-## Setup
+A small, complete dbt project for a mobile game: raw CSVs in, tested
+analytics marts out. It runs locally on DuckDB in about two seconds, with no
+warehouse or credentials needed.
 
 ```bash
 pip install dbt-duckdb
-dbt seed
-dbt run
-dbt test
+dbt build --profiles-dir .
 ```
 
-## Structure
+`dbt build` loads the seeds, builds every model and runs every test in
+dependency order. Expected result: `PASS=41 ERROR=0`.
+
+## Lineage
 
 ```
-seeds/          # Raw CSV data (players, transactions, sessions)
-models/
-  staging/      # Clean up the raw data
-  intermediate/ # Join and aggregate
-  marts/        # Final tables for dashboards
-tests/          # Data quality checks
-macros/         # Reusable SQL
+seeds (raw CSV)          staging                 intermediate             marts
+---------------          -------                 ------------             -----
+raw_players      ->  stg_players       --+-> int_player_activity --+-> mart_player_360 --> mart_regional_performance
+raw_sessions     ->  stg_sessions      --+                          |
+raw_transactions ->  stg_transactions  ----> int_player_revenue  --+
+                     stg_sessions + stg_transactions -------------------> mart_daily_metrics
 ```
 
-## What it does
+| Layer | What it does |
+|---|---|
+| **Staging** | One model per source. Type casting, trimming, consistent casing, region mapping, product categories. No joins. |
+| **Intermediate** | Player-level aggregates: activity (sessions, playtime, engagement score, churn) and revenue (spend by category, first/last purchase). |
+| **Marts** | `mart_player_360`: one row per player with segment and lifecycle stage. `mart_daily_metrics`: DAU, revenue, payers, ARPDAU per day from event-level data. `mart_regional_performance`: conversion and retention by country. |
 
-**Staging** - Cleans raw data, standardizes formats, adds useful columns
+## Data quality
 
-**Intermediate** - Aggregates by player (activity metrics, revenue metrics)
+41 checks run on every build:
 
-**Marts** - Final tables:
-- `mart_player_360` - everything about a player in one row
-- `mart_daily_metrics` - daily KPIs
-- `mart_regional_performance` - by country/region
+- **Keys**: unique and not null at every grain (players, sessions, transactions, days).
+- **Referential integrity**: every session and transaction belongs to a known player.
+- **Accepted values**: platform, player segment, lifecycle stage.
+- **Reconciliation**: total revenue ties out across staging, player 360 and the daily mart, so no transaction is dropped or double-counted on the way through.
+- **Business rules**: revenue is never negative; heavy players get a sensible engagement score.
 
-## Tests
+## Design choices
 
-- Primary keys are unique and not null
-- Platform values are valid (ios, android, switch)
-- Revenue is never negative
-- Engagement scores make sense
+- **Reproducible dates.** Recency and churn are measured against an `as_of_date`
+  variable, not `current_date`, so the same data always gives the same answer.
+  Run as of another date with `dbt build --vars '{as_of_date: 2025-02-28}'`.
+- **Thresholds are config, not magic numbers.** Whale / Dolphin spend levels
+  and the churn window live in `dbt_project.yml` vars.
+- **Daily metrics come from events, not from player summaries**, so a day's
+  revenue is what was actually spent that day.
 
-## Why dbt
+## Why this project
 
-I use dbt at work to transform raw data into analytics tables. This project shows the pattern: source → staging → intermediate → marts, with tests at each layer.
+I use dbt at work to build transaction monitoring and fraud detection models
+over payment data. This repo shows the same pattern on public-safe sample data:
+layered models, tests at every layer, and numbers that reconcile.
 
 ---
 

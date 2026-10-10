@@ -17,11 +17,11 @@ clean-targets:
   - "dbt_packages"
 
 vars:
-  # Date boundaries for analysis
-  start_date: '2025-01-01'
-  end_date: '2025-12-31'
-  
-  # Business thresholds
+  # Snapshot date for recency / churn logic. Fixed (not current_date) so the
+  # same data always gives the same answer. Override: --vars '{as_of_date: ...}'
+  as_of_date: '2025-03-31'
+
+  # Business thresholds (revenue in USD)
   whale_threshold: 50
   dolphin_threshold: 10
   churn_days: 30
